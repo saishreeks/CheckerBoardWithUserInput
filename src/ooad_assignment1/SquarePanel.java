@@ -19,6 +19,8 @@ public class SquarePanel extends JPanel {
 
     //stores the color of the checker piece along with the block number
     HashMap<Integer, Color> position = new HashMap<>();
+   // HashMap<Integer, CheckerPieceInfo> position = new HashMap<>();
+
 
     //stores the coordinates, row and column of each of the checker blocks
     HashMap<Integer, CheckerBlocksInfo> blockInfoMap = new HashMap<>();
@@ -45,6 +47,8 @@ public class SquarePanel extends JPanel {
 
                         if (i < 3) {
                             drawCircle(g, x, y, Color.black);
+                            CheckerPieceInfo pieceInfo = new CheckerPieceInfo();
+
                             position.put(number, Color.black);
                         }
 
@@ -159,16 +163,16 @@ public class SquarePanel extends JPanel {
 
         Color pieceColor = getValueInPosition(fromNum);
 
+        if (!hasCheckerPiece(fromNum)) {
+            System.out.println("from " + fromNum + "has a no checker piece");
+            return;
+        }
 
         if (!checkValidMove(fromNum, toNum, pieceColor)) {
             System.out.println("Not a valid move");
             return;
         }
 
-        if (!hasCheckerPiece(fromNum)) {
-            System.out.println("from " + fromNum + "has a no checker piece");
-            return;
-        }
 
         if (!isDiagonal(row, col, toRow, toCol)) {
             System.out.println(" they are not diagonal");
@@ -181,10 +185,44 @@ public class SquarePanel extends JPanel {
         }
 
 
+
+
+        //if black is the first move then it returns to Checker frame and onclick of next it'll take next move ??????
+        if (stack.empty() && !pieceColor.equals(Color.red)){
+            System.out.println("First move should be red");
+            return;
+        }
+
+/*if the distance between to and from block is more than 1, then it is a jump. Before jumping, it
+checks if the middle Block had a checker piece in it. If its not there it shouldn't jump.
+If there a piece in the middle block, then it'll jump over the block and removes the piece in the middle block */
         if (calculateDistance(row, col, toRow, toCol) != 1) {
+
+            int midBlockNumber=0;
+
+            if ((row %2!=0) && (col%2!=0) && (toRow%2!=0) && (toCol%2!=0))
+                midBlockNumber = (fromNum+toNum)/2+1;
+            else
+                midBlockNumber = (fromNum+toNum)/2;
+
+            if (!hasCheckerPiece(midBlockNumber)) {
+                System.out.println("no checker piece in "+ midBlockNumber);
+                return;
+            }
+
+            if (position.get(fromNum).equals(position.get(midBlockNumber))){
+                System.out.println("jump on same color piece not allowed. Try a different move");
+                return;
+            }
+
             x.setColor(Color.DARK_GRAY);
             x.fillRect(((col + toCol) / 2) * dimension, ((row + toRow) / 2) * dimension, dimension, dimension);
+            //remove piece ??????
+            position.remove(midBlockNumber);
+
         }
+
+
 
 
         int toX = toBlock.getX();
@@ -193,6 +231,15 @@ public class SquarePanel extends JPanel {
         x.setColor(pieceColor);
         x.fillOval(toX + 10, toY + 10, 40, 40);
 
+        if (isCrowned(fromNum,toNum,toRow)){
+            System.out.println(position.get(fromNum)+ " is crowned");
+            x.fillOval(toX + 10, toY + 10, 40, 40);
+            x.setColor(Color.white);
+            x.drawString("K", toX+30, toY+30);
+        }
+        else
+            x.fillOval(toX + 10, toY + 10, 40, 40);
+
         //update the hash map by adding the checker piece in the move-to location and deleting it from the move-from location
         position.put(toNum, pieceColor);
         position.remove(fromNum);
@@ -200,8 +247,16 @@ public class SquarePanel extends JPanel {
         x.setColor(Color.DARK_GRAY);
         x.fillRect(fromX, fromY, dimension, dimension);
 
+
+
+
+        // to reprint the numbers not working????????
+//        g.setColor(Color.WHITE);
+//        g.drawString(String.valueOf(fromNum), fromX - 15, fromY + 10);
+
+
         //push the toBlock and fromBlock info to the stack
-        System.out.println(g);
+
         colorInFromBlockNumber = new CheckerPieceColorInBlockNumber();
         colorInFromBlockNumber.setBlockNumber(fromNum);
         colorInFromBlockNumber.setColor(pieceColor);
@@ -215,11 +270,13 @@ public class SquarePanel extends JPanel {
 
     }
 
+
+
     private int calculateDistance(int row, int col, int toRow, int toCol) {
         return Math.max(Math.abs(row - toRow), Math.abs(col - toCol));
     }
 
-    // red and black shouldn't move backwards
+    // red and black shouldn't move backwards and each player should get a chance to play
     private boolean checkValidMove(int fromNum, int toNum, Color pieceColor) {
 
 
@@ -230,14 +287,14 @@ public class SquarePanel extends JPanel {
     }
 
     //checks if the move-from and move-to blocks are diagonal
-    public boolean isDiagonal(int row, int col, int toRow, int toCol) {
+    private boolean isDiagonal(int row, int col, int toRow, int toCol) {
         boolean result = false;
         result = (Math.abs(row - toRow) == Math.abs(col - toCol));
         return result;
     }
 
     //checks if the block has a checker piece or not
-    public boolean hasCheckerPiece(int blockNumber) {
+    private boolean hasCheckerPiece(int blockNumber) {
 
         Color val = getValueInPosition(blockNumber);
 
@@ -249,7 +306,22 @@ public class SquarePanel extends JPanel {
 
     }
 
+    private boolean isCrowned(int fromNum, int toNum, int toRow) {
+        boolean  crowned =false;
+        if(position.get(fromNum).equals(Color.red) && toRow == 0)
+            crowned = true;
+
+        if (position.get(fromNum).equals(Color.black) && toRow == 7)
+            crowned = true;
+
+        return crowned;
+    }
+
     public void undo(Graphics g) {
+        if (stack.empty()){
+            System.out.println("didn't have any valid moves previously"); // no valid moves stored to undo ?????????
+            return;
+        }
         CheckerPieceColorInBlockNumber previousToBlock = stack.pop(); // gives to
         CheckerPieceColorInBlockNumber previousFromBlock = stack.pop(); //gives from
         CheckerBlocksInfo from = blockInfoMap.get(previousFromBlock.getBlockNumber());
@@ -259,8 +331,18 @@ public class SquarePanel extends JPanel {
         g.setColor(Color.DARK_GRAY);
         g.fillRect(to.getX(),to.getY(),dimension,dimension);
 
+        if (calculateDistance(from.getRow(),from.getCol(),to.getRow(),to.getCol())!=1){
+            if (previousFromBlock.getColor().equals(Color.red))
+                g.setColor(Color.black);
+            else
+                g.setColor(Color.red);
+            g.fillOval(((from.getCol()+to.getCol())/2)*dimension+10,((from.getRow()+to.getRow())/2)*dimension+10,40,40);
+        }
+
         position.remove(previousToBlock.getBlockNumber());
         position.put(previousFromBlock.getBlockNumber(),previousFromBlock.getColor());
+
+
 
 
     }

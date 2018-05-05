@@ -13,19 +13,30 @@ public class CheckerFrame extends JFrame {
         JPanel mainPanel = new JPanel();
         mainPanel.setBackground(new Color(0,150,0));
 
+        JPanel leftPanel = new JPanel();
+        JTextField comments = new JTextField("");
+        comments.setBackground(new Color(0,150,0));
+        comments.setSize(300,50);
+
+        leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
+
         SquarePanel sp = new SquarePanel();
-        JPanel jp = new JPanel();
+        JPanel buttonsPanel = new JPanel();
 
         JButton previousBtn = new JButton("Previous");
         JButton nextBtn = new JButton("Next");
 
 
+
+//move in the input file is stored in movesList
         List<String> movesList = readMovesFromFile();
         List<Integer> currentMove = new ArrayList<>();
 
+
         nextBtn.addActionListener(e -> {
             if(currentMove.size() >= movesList.size()) {
-                System.out.println("No more moves left");
+                comments.setText("No more moves in the input file");
+                System.out.println("No more moves in the input file");
                 return;
             }
             Graphics g =sp.getGraphics();
@@ -37,25 +48,42 @@ public class CheckerFrame extends JFrame {
 
         });
 
+
+//on click of previous button it'll undo the move
         previousBtn.addActionListener(e -> {
             Graphics g = sp.getGraphics();
+            if (currentMove.size()<=0) {
+                comments.setText("No more moves to undo");
+                System.out.println("No more moves to undo");
+                return;
+            }
             currentMove.remove(currentMove.size()-1);
+
             sp.undo(g);
+
         });
 
 
-        jp.setBackground(new Color(0,150,0));
-        jp.setLayout(new BoxLayout(jp,BoxLayout.Y_AXIS));
-        jp.add(previousBtn);
-        jp.add(Box.createRigidArea(new Dimension(0,100)));
-        jp.add(nextBtn);
+        leftPanel.add(sp);
+        leftPanel.add(comments);
+
+        buttonsPanel.setBackground(new Color(0,150,0));
+        buttonsPanel.setLayout(new BoxLayout(buttonsPanel,BoxLayout.Y_AXIS));
+        buttonsPanel.add(previousBtn);
+        buttonsPanel.add(Box.createRigidArea(new Dimension(0,100)));
+        buttonsPanel.add(nextBtn);
+        buttonsPanel.add(Box.createRigidArea(new Dimension(0,100)));
+        buttonsPanel.add(comments);
 
 
 
         sp.setPreferredSize(new Dimension(480,480));
 
-        mainPanel.add(sp);
-        mainPanel.add(jp);
+
+        mainPanel.add(leftPanel);
+        mainPanel.add(buttonsPanel);
+
+
 
         setVisible(true);
         setSize(960,600);
@@ -80,9 +108,6 @@ public class CheckerFrame extends JFrame {
             e.printStackTrace();
         }
 
-        for (String line:userMovesList){
-            System.out.println(line);
-        }
         return userMovesList;
     }
 

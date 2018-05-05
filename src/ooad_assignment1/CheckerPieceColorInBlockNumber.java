@@ -4,6 +4,7 @@ import java.awt.*;
 
 public class CheckerPieceColorInBlockNumber {
     private Color color;
+    private int blockNumber;
 
     public Color getColor() {
         return color;
@@ -21,6 +22,6 @@ public class CheckerPieceColorInBlockNumber {
         this.blockNumber = blockNumber;
     }
 
-    private int blockNumber;
+
 
 }

@@ -58,7 +58,6 @@ public class CheckerFrame extends JFrame {
                 return;
             }
             currentMove.remove(currentMove.size()-1);
-
             sp.undo(g);
 
         });

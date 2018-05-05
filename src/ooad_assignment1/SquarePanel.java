@@ -18,14 +18,13 @@ public class SquarePanel extends JPanel {
     CheckerBlocksInfo checkerBlocks;
 
     //stores the color of the checker piece along with the block number
-    HashMap<Integer, Color> position = new HashMap<>();
-   // HashMap<Integer, CheckerPieceInfo> position = new HashMap<>();
+    HashMap<Integer, CheckerPieceInfo> position = new HashMap<>();
 
 
     //stores the coordinates, row and column of each of the checker blocks
     HashMap<Integer, CheckerBlocksInfo> blockInfoMap = new HashMap<>();
 
-    Stack<CheckerPieceColorInBlockNumber> stack = new Stack<>();
+    Stack<CheckerPieceInfo> stack = new Stack<>();
 
 
     //paint component creates the checker board with the initial placement of the checker pieces
@@ -47,14 +46,12 @@ public class SquarePanel extends JPanel {
 
                         if (i < 3) {
                             drawCircle(g, x, y, Color.black);
-                            CheckerPieceInfo pieceInfo = new CheckerPieceInfo();
-
-                            position.put(number, Color.black);
+                            position.put(number, new CheckerPieceInfo(number, Color.black, false));
                         }
 
                         if (i > 4) {
                             drawCircle(g, x, y, Color.red);
-                            position.put(number, Color.red);
+                            position.put(number, new CheckerPieceInfo(number, Color.red, false));
                         }
 
                         isDark = false;
@@ -83,13 +80,13 @@ public class SquarePanel extends JPanel {
 
                         if (i < 3) {
                             drawCircle(g, x, y, Color.black);
-                            position.put(number, Color.black);
+                            position.put(number, new CheckerPieceInfo(number, Color.black, false));
 
                         }
 
                         if (i > 4) {
                             drawCircle(g, x, y, Color.red);
-                            position.put(number, Color.red);
+                            position.put(number, new CheckerPieceInfo(number, Color.red, false));
                         }
 
                         isDark = true;
@@ -115,16 +112,6 @@ public class SquarePanel extends JPanel {
             x = 0;
         }
 
-        for (int name : position.keySet()) {
-            System.out.println(name + " : " + position.get(name));
-        }
-        System.out.println("12 :" + getValueInPosition(12));
-        System.out.println("34 :" + getValueInPosition(34));
-
-        for (int cb : blockInfoMap.keySet()) {
-            System.out.println(cb + "at" + blockInfoMap.get(cb).getX());
-        }
-
     }
 
     //draws the checker pieces in the required blocks
@@ -134,13 +121,13 @@ public class SquarePanel extends JPanel {
     }
 
     //gives the color of the checker piece in the given position and returns null if there ain't any
-    public Color getValueInPosition(int positionNumber) {
+    public CheckerPieceInfo getValueInPosition(int positionNumber) {
 
-        Color value = null;
-        if (position.containsKey(positionNumber)) {
-            value = position.get(positionNumber);
-        }
-        return value;
+        if (position.containsKey(positionNumber))
+            return position.get(positionNumber);
+
+        return null;
+
     }
 
     public void moveDiagonal(Graphics g, int fromBlockNumber, int toBlockNumber) {
@@ -150,8 +137,9 @@ public class SquarePanel extends JPanel {
     //Validates that the move-from block has a checker piece and move-to block doesn't and moves the checker piece
     public void moveDiagonal(Graphics x, CheckerBlocksInfo fromBlock, CheckerBlocksInfo toBlock, int fromNum, int toNum) {
 
-        CheckerPieceColorInBlockNumber colorInFromBlockNumber;
-        CheckerPieceColorInBlockNumber colorInToBlockNumber;
+
+        CheckerPieceInfo colorInFromBlockNumber;
+        CheckerPieceInfo colorInToBlockNumber;
 
         int row = fromBlock.getRow();
         int col = fromBlock.getCol();
@@ -161,12 +149,13 @@ public class SquarePanel extends JPanel {
         int fromX = fromBlock.getX();
         int fromY = fromBlock.getY();
 
-        Color pieceColor = getValueInPosition(fromNum);
+        Color pieceColor = getValueInPosition(fromNum).getColor();
 
         if (!hasCheckerPiece(fromNum)) {
             System.out.println("from " + fromNum + "has a no checker piece");
             return;
         }
+
 
         if (!checkValidMove(fromNum, toNum, pieceColor)) {
             System.out.println("Not a valid move");
@@ -185,11 +174,9 @@ public class SquarePanel extends JPanel {
         }
 
 
-
-
         //if black is the first move then it returns to Checker frame and onclick of next it'll take next move ??????
-        if (stack.empty() && !pieceColor.equals(Color.red)){
-            System.out.println("First move should be red");
+        if (stack.empty() && !pieceColor.equals(Color.red)) {
+            System.out.println("Player with red checkers should make the first move");
             return;
         }
 
@@ -198,20 +185,20 @@ checks if the middle Block had a checker piece in it. If its not there it should
 If there a piece in the middle block, then it'll jump over the block and removes the piece in the middle block */
         if (calculateDistance(row, col, toRow, toCol) != 1) {
 
-            int midBlockNumber=0;
+            int midBlockNumber = 0;
 
-            if ((row %2!=0) && (col%2!=0) && (toRow%2!=0) && (toCol%2!=0))
-                midBlockNumber = (fromNum+toNum)/2+1;
+            if ((row % 2 != 0) && (col % 2 != 0) && (toRow % 2 != 0) && (toCol % 2 != 0))
+                midBlockNumber = (fromNum + toNum) / 2 + 1;
             else
-                midBlockNumber = (fromNum+toNum)/2;
+                midBlockNumber = (fromNum + toNum) / 2;
 
             if (!hasCheckerPiece(midBlockNumber)) {
-                System.out.println("no checker piece in "+ midBlockNumber);
+                System.out.println("There is no checker piece in " + midBlockNumber);
                 return;
             }
 
-            if (position.get(fromNum).equals(position.get(midBlockNumber))){
-                System.out.println("jump on same color piece not allowed. Try a different move");
+            if (position.get(fromNum).getColor().equals(position.get(midBlockNumber).getColor())) {
+                System.out.println(position.get(fromNum).getColor() + " can't jump on " + position.get(midBlockNumber).getColor());
                 return;
             }
 
@@ -223,31 +210,32 @@ If there a piece in the middle block, then it'll jump over the block and removes
         }
 
 
-
-
         int toX = toBlock.getX();
         int toY = toBlock.getY();
         Graphics g = toBlock.getGraphics();
         x.setColor(pieceColor);
         x.fillOval(toX + 10, toY + 10, 40, 40);
 
-        if (isCrowned(fromNum,toNum,toRow)){
-            System.out.println(position.get(fromNum)+ " is crowned");
+        CheckerPieceInfo checkerPieceInfo = position.get(fromNum);
+
+        if (isCrowned(fromNum, toRow)) {
+            System.out.println(position.get(fromNum).getColor() + " is crowned");
             x.fillOval(toX + 10, toY + 10, 40, 40);
             x.setColor(Color.white);
-            x.drawString("K", toX+30, toY+30);
-        }
-        else
+            x.drawString("K", toX + 30, toY + 30);
+            checkerPieceInfo.setKing(true);
+        } else
             x.fillOval(toX + 10, toY + 10, 40, 40);
 
         //update the hash map by adding the checker piece in the move-to location and deleting it from the move-from location
-        position.put(toNum, pieceColor);
+
+
+        checkerPieceInfo.setBlockNumber(toNum);
+        position.put(toNum, checkerPieceInfo);
         position.remove(fromNum);
 
         x.setColor(Color.DARK_GRAY);
         x.fillRect(fromX, fromY, dimension, dimension);
-
-
 
 
         // to reprint the numbers not working????????
@@ -256,20 +244,16 @@ If there a piece in the middle block, then it'll jump over the block and removes
 
 
         //push the toBlock and fromBlock info to the stack
-
-        colorInFromBlockNumber = new CheckerPieceColorInBlockNumber();
+        colorInFromBlockNumber = new CheckerPieceInfo();
         colorInFromBlockNumber.setBlockNumber(fromNum);
         colorInFromBlockNumber.setColor(pieceColor);
         stack.push(colorInFromBlockNumber);
 
-        colorInToBlockNumber = new CheckerPieceColorInBlockNumber();
+        colorInToBlockNumber = new CheckerPieceInfo();
         colorInToBlockNumber.setBlockNumber(toNum);
         colorInToBlockNumber.setColor(pieceColor);
         stack.push(colorInToBlockNumber);
-
-
     }
-
 
 
     private int calculateDistance(int row, int col, int toRow, int toCol) {
@@ -279,7 +263,6 @@ If there a piece in the middle block, then it'll jump over the block and removes
     // red and black shouldn't move backwards and each player should get a chance to play
     private boolean checkValidMove(int fromNum, int toNum, Color pieceColor) {
 
-
         if (pieceColor.equals(Color.red))
             return stack.size() > 0 ? !pieceColor.equals(stack.peek().getColor()) && fromNum > toNum : fromNum > toNum;
 
@@ -288,15 +271,13 @@ If there a piece in the middle block, then it'll jump over the block and removes
 
     //checks if the move-from and move-to blocks are diagonal
     private boolean isDiagonal(int row, int col, int toRow, int toCol) {
-        boolean result = false;
-        result = (Math.abs(row - toRow) == Math.abs(col - toCol));
-        return result;
+        return (Math.abs(row - toRow) == Math.abs(col - toCol));
     }
 
     //checks if the block has a checker piece or not
     private boolean hasCheckerPiece(int blockNumber) {
 
-        Color val = getValueInPosition(blockNumber);
+        CheckerPieceInfo val = getValueInPosition(blockNumber);
 
         if (val == null)
             return false;
@@ -306,43 +287,49 @@ If there a piece in the middle block, then it'll jump over the block and removes
 
     }
 
-    private boolean isCrowned(int fromNum, int toNum, int toRow) {
-        boolean  crowned =false;
-        if(position.get(fromNum).equals(Color.red) && toRow == 0)
-            crowned = true;
+    private boolean isCrowned(int fromNum, int toRow) {
 
-        if (position.get(fromNum).equals(Color.black) && toRow == 7)
-            crowned = true;
-
-        return crowned;
+        if (position.get(fromNum).getColor().equals(Color.red) && toRow == 0 || position.get(fromNum).getColor().equals(Color.black) && toRow == 7)
+            return true;
+        return false;
     }
 
     public void undo(Graphics g) {
-        if (stack.empty()){
+
+        Color color;
+        if (stack.empty()) {
             System.out.println("didn't have any valid moves previously"); // no valid moves stored to undo ?????????
             return;
         }
-        CheckerPieceColorInBlockNumber previousToBlock = stack.pop(); // gives to
-        CheckerPieceColorInBlockNumber previousFromBlock = stack.pop(); //gives from
+        CheckerPieceInfo previousToBlock = stack.pop(); // gives to
+        CheckerPieceInfo previousFromBlock = stack.pop(); //gives from
         CheckerBlocksInfo from = blockInfoMap.get(previousFromBlock.getBlockNumber());
         drawCircle(g, from.getX(), from.getY(), previousToBlock.getColor());
 
         CheckerBlocksInfo to = blockInfoMap.get(previousToBlock.getBlockNumber());
         g.setColor(Color.DARK_GRAY);
-        g.fillRect(to.getX(),to.getY(),dimension,dimension);
+        g.fillRect(to.getX(), to.getY(), dimension, dimension);
 
-        if (calculateDistance(from.getRow(),from.getCol(),to.getRow(),to.getCol())!=1){
-            if (previousFromBlock.getColor().equals(Color.red))
-                g.setColor(Color.black);
+
+        if (calculateDistance(from.getRow(), from.getCol(), to.getRow(), to.getCol()) != 1) {
+
+            color = (previousFromBlock.getColor().equals(Color.red)) ? Color.black : Color.red;
+
+            g.setColor(color);
+            g.fillOval(((from.getCol() + to.getCol()) / 2) * dimension + 10, ((from.getRow() + to.getRow()) / 2) * dimension + 10, 40, 40);
+
+            int midBlockNumber=0;
+            if ((from.getRow() % 2 != 0) && (from.getCol() % 2 != 0) && (to.getRow() % 2 != 0) && (to.getCol() % 2 != 0))
+                midBlockNumber = (previousFromBlock.getBlockNumber() + previousToBlock.getBlockNumber()) / 2 + 1;
             else
-                g.setColor(Color.red);
-            g.fillOval(((from.getCol()+to.getCol())/2)*dimension+10,((from.getRow()+to.getRow())/2)*dimension+10,40,40);
+                midBlockNumber = (previousFromBlock.getBlockNumber() + previousToBlock.getBlockNumber()) / 2;
+
+            //if centre is King not handled ??????????????
+            position.put(midBlockNumber, new CheckerPieceInfo(midBlockNumber,color,false));
         }
 
         position.remove(previousToBlock.getBlockNumber());
-        position.put(previousFromBlock.getBlockNumber(),previousFromBlock.getColor());
-
-
+        position.put(previousFromBlock.getBlockNumber(), previousFromBlock);
 
 
     }

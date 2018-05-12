@@ -2,8 +2,8 @@ package ooad_assignment1;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.HashMap;
-import java.util.Stack;
+import java.util.*;
+import java.util.List;
 
 public class SquarePanel extends JPanel {
     int x = 0, y = 0;
@@ -133,6 +133,94 @@ public class SquarePanel extends JPanel {
 
     }
 
+    public List<Integer> checkForAvailableJumps() { List<Integer> validFromBlocksList = new ArrayList<>();
+        if (stack.size() > 0) {
+            Color color = stack.peek().getColor();
+            Iterator it = position.entrySet().iterator();
+            while (it.hasNext()) {
+                Map.Entry pair = (Map.Entry) it.next();
+                if (position.get(pair.getKey()).getColor() != color) {
+                    CheckerPieceInfo tempChecker = position.get(pair.getKey());
+                    int tempBlockNumber = position.get(pair.getKey()).getBlockNumber();
+                    if (checkForLegalJumps(tempChecker, blockInfoMap.get(tempBlockNumber))) {
+                        validFromBlocksList.add(tempBlockNumber);
+                    }
+                }
+            }
+        }
+        return validFromBlocksList;
+    }
+
+    private boolean checkForLegalJumps(CheckerPieceInfo tempChecker, CheckerBlocksInfo checkerBlocksInfo) {
+        int row = checkerBlocksInfo.getRow();
+        int col = checkerBlocksInfo.getCol();
+
+        if (canJump(tempChecker.getColor(), row, col, row - 1, col + 1, row - 2, col + 2, tempChecker.getBlockNumber(), tempChecker.getBlockNumber() - 7))
+            return true;
+        if (canJump(tempChecker.getColor(), row, col, row - 1, col - 1, row - 2, col - 2, tempChecker.getBlockNumber(), tempChecker.getBlockNumber() - 9))
+            return true;
+        if (canJump(tempChecker.getColor(), row, col, row + 1, col + 1, row + 2, col + 2, tempChecker.getBlockNumber(), tempChecker.getBlockNumber() + 9))
+            return true;
+        if (canJump(tempChecker.getColor(), row, col, row + 1, col - 1, row + 2, col - 2, tempChecker.getBlockNumber(), tempChecker.getBlockNumber() + 7))
+            return true;
+        return false;
+    }
+
+    private boolean canJump(Color color, int r1, int c1, int r2, int c2, int r3, int c3, int fromBlock, int toBlock) {
+
+        int middleBlock = calculateMiddleBlockNumber(r1, c1, r3, c3, fromBlock, toBlock);
+        if (color.equals(Color.red)) {
+            if (r2 < 0 || r2 > 8)
+                return false;
+            if (r3 > r1)
+
+                return false;
+            if (!hasCheckerPiece(middleBlock))
+                return false;
+            if (position.get(middleBlock).getColor().equals(Color.red))
+                return false;
+        }
+        if (color.equals(Color.black)) {
+            if (r2 < 0 || r2 > 8)
+                return false;
+            if (r3 < r1)
+                return false;
+            if (!hasCheckerPiece(middleBlock))
+                return false;
+            if (position.get(middleBlock).getColor().equals(Color.black))
+                return false;
+        }
+        if (color.equals(Color.red) && position.get(fromBlock).isKing()) {
+            if (r2 < 0 || r2 > 8)
+                return false;
+            if (!hasCheckerPiece(middleBlock))
+                return false;
+            if (position.get(middleBlock).getColor().equals(Color.red))
+                return false;
+        }
+        if (color.equals(Color.black) && position.get(fromBlock).isKing()) {
+            if (r2 < 0 || r2 > 8)
+                return false;
+            if (!hasCheckerPiece(middleBlock))
+                return false;
+            if (position.get(middleBlock).getColor().equals(Color.black))
+                return false;
+        }
+
+        return true;
+
+    }
+
+    private int calculateMiddleBlockNumber(int row, int col, int toRow, int toCol, int fromBlock, int toBlock) {
+        int middleBlock = 0;
+        if ((row % 2 != 0) && (col % 2 != 0) && (toRow % 2 != 0) && (toCol % 2 != 0))
+            middleBlock = (fromBlock + toBlock) / 2 + 1;
+        else
+            middleBlock = (fromBlock + toBlock) / 2;
+        return middleBlock;
+    }
+
+
     public void moveDiagonal(Graphics g, int fromBlockNumber, int toBlockNumber) {
         moveDiagonal(g, blockInfoMap.get(fromBlockNumber), blockInfoMap.get(toBlockNumber), fromBlockNumber, toBlockNumber);
     }
@@ -154,6 +242,8 @@ public class SquarePanel extends JPanel {
 
         //if there is not piece in the block return null
         Color pieceColor = getValueInPosition(fromNum) != null ? getValueInPosition(fromNum).getColor() : null;
+
+
 
         if (!hasCheckerPiece(fromNum)) {
             System.out.println("from " + fromNum + "has a no checker piece");
@@ -190,37 +280,20 @@ public class SquarePanel extends JPanel {
             return;
         }
 
-/*if the distance between to and from block is more than 1, then it is a jump. Before jumping, it
-checks if the middle Block had a checker piece in it. If its not there it shouldn't jump.
-If there a piece in the middle block, then it'll jump over the block and removes the piece in the middle block */
-        if (calculateDistance(row, col, toRow, toCol) == 2 ) {
+        /* if the distance between to and from block is more than 1, then it is a jump.
+         * If the distance is 2 then its a single jump. If the distance is more than 2, then it's a multiple jumps.
+         * Also if distance is more than 2 and if the distance is odd then jump is not possible
+         * because there'll be even number of blocks in between from and to blocks*/
 
-            int midBlockNumber = 0;
+        if (calculateDistance(row, col, toRow, toCol) == 2) {
+            singleJump(fromNum, toNum, row, col, toRow, toCol, x);
 
-            if ((row % 2 != 0) && (col % 2 != 0) && (toRow % 2 != 0) && (toCol % 2 != 0))
-                midBlockNumber = (fromNum + toNum) / 2 + 1;
-            else
-                midBlockNumber = (fromNum + toNum) / 2;
+        } else if (calculateDistance(row, col, toRow, toCol) > 2 && calculateDistance(row, col, toRow, toCol) % 2 == 0) {
+            multipleJumps(fromNum, toNum, row, col, toRow, toCol, x);
 
-            if (!hasCheckerPiece(midBlockNumber)) {
-                System.out.println("There is no checker piece in " + midBlockNumber + "can't jump on an empty block");
-                return;
-            }
-
-            if (position.get(fromNum).getColor().equals(position.get(midBlockNumber).getColor())) {
-                System.out.println(position.get(fromNum).getColor() + " can't jump on " + position.get(midBlockNumber).getColor());
-                return;
-            }
-
-            x.setColor(Color.DARK_GRAY);
-            x.fillRect(((col + toCol) / 2) * dimension, ((row + toRow) / 2) * dimension, dimension, dimension);
-            //remove piece ??????
-            position.remove(midBlockNumber);
-
-        }else if(calculateDistance(row, col, toRow, toCol) > 2){
-            System.out.println("Have more than 2 blocks");
+        } else if (calculateDistance(row, col, toRow, toCol) > 2 && calculateDistance(row, col, toRow, toCol) % 2 != 0) {
+            System.out.println("Jump is not possible from" + fromNum + " to" + toNum);
             return;
-
         }
 
 
@@ -230,6 +303,7 @@ If there a piece in the middle block, then it'll jump over the block and removes
 
         CheckerPieceInfo checkerPieceInfo = position.get(fromNum);
 
+//draw the checker piece in the ToBlock. if it has reached the other side make it a King, else just draw the piece in toBlock
         if (isCrowned(fromNum, toRow)) {
             System.out.println(position.get(fromNum).getColor() + " is crowned");
             x.setColor(pieceColor);
@@ -242,12 +316,11 @@ If there a piece in the middle block, then it'll jump over the block and removes
         }
 
         //update the hash map by adding the checker piece in the move-to location and deleting it from the move-from location
-
-
         checkerPieceInfo.setBlockNumber(toNum);
         position.put(toNum, checkerPieceInfo);
         position.remove(fromNum);
 
+        //remove the checker piece from fromBlock
         x.setColor(Color.DARK_GRAY);
         x.fillRect(fromX, fromY, dimension, dimension);
 
@@ -262,6 +335,73 @@ If there a piece in the middle block, then it'll jump over the block and removes
         colorInToBlockNumber.setBlockNumber(toNum);
         colorInToBlockNumber.setColor(pieceColor);
         stack.push(colorInToBlockNumber);
+    }
+
+    private void multipleJumps(int fromNum, int toNum, int row, int col, int toRow, int toCol, Graphics x) {
+        int tempToNum = 0;
+        if (fromNum > toNum) {
+            if (col < toCol) {
+                tempToNum = fromNum - 7;
+
+                intermediateJumps(fromNum, toNum, row, col, toRow, toCol, x, tempToNum);
+
+            } else if (col > toCol) {
+                tempToNum = fromNum - 9;
+
+                intermediateJumps(fromNum, toNum, row, col, toRow, toCol, x, tempToNum);
+
+
+            }
+
+        } else {
+            if (col < toCol) {
+                tempToNum = fromNum + 9;
+                intermediateJumps(fromNum, toNum, row, col, toRow, toCol, x, tempToNum);
+            } else if (col > toCol) {
+                tempToNum = fromNum + 7;
+                intermediateJumps(fromNum, toNum, row, col, toRow, toCol, x, tempToNum);
+            }
+
+        }
+    }
+
+
+    private void intermediateJumps(int fromNum, int toNum, int row, int col, int toRow, int toCol, Graphics x, int tempToNum) {
+        singleJump(fromNum, tempToNum, row, col, blockInfoMap.get(tempToNum).getRow(), blockInfoMap.get(tempToNum).getCol(), x);
+        position.put(tempToNum, new CheckerPieceInfo(tempToNum, position.get(fromNum).getColor(), false));
+        singleJump(tempToNum, toNum, blockInfoMap.get(tempToNum).getRow(), blockInfoMap.get(tempToNum).getCol(), toRow, toCol, x);
+        position.remove(tempToNum);
+    }
+
+   /* Before jumping, it
+    checks if the middle Block had a checker piece in it. If its not there it shouldn't jump.
+    If there a piece in the middle block, then it'll jump over the block and removes the piece in the middle block */
+
+    private void singleJump(int fromNum, int toNum, int row, int col, int toRow, int toCol, Graphics x) {
+        //have a function for middle block. Use that .........................????
+        int midBlockNumber = 0;
+
+        if ((row % 2 != 0) && (col % 2 != 0) && (toRow % 2 != 0) && (toCol % 2 != 0))
+            midBlockNumber = (fromNum + toNum) / 2 + 1;
+        else
+            midBlockNumber = (fromNum + toNum) / 2;
+
+        if (!hasCheckerPiece(midBlockNumber)) {
+            System.out.println("There is no checker piece in " + midBlockNumber + "can't jump on an empty block");
+            return;
+        }
+
+        if (position.get(fromNum).getColor().equals(position.get(midBlockNumber).getColor())) {
+            System.out.println(position.get(fromNum).getColor() + " can't jump on " + position.get(midBlockNumber).getColor());
+            return;
+        }
+
+        //remove the piece from middle block
+        x.setColor(Color.DARK_GRAY);
+        x.fillRect(((col + toCol) / 2) * dimension, ((row + toRow) / 2) * dimension, dimension, dimension);
+
+        position.remove(midBlockNumber);
+
     }
 
     private boolean checkValidMoveForKing(Color pieceColor) {

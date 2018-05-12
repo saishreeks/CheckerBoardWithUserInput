@@ -14,9 +14,10 @@ public class CheckerFrame extends JFrame {
         mainPanel.setBackground(new Color(0, 150, 0));
 
         JPanel leftPanel = new JPanel();
-        JTextField comments = new JTextField("");
-        comments.setBackground(new Color(0, 150, 0));
-        comments.setSize(300, 50);
+
+        JLabel message = new JLabel("");
+        message.setBackground(new Color(0, 150, 0));
+        message.setSize(300, 50);
 
         leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
 
@@ -34,20 +35,34 @@ public class CheckerFrame extends JFrame {
 
         nextBtn.addActionListener(e -> {
             if (currentMove.size() >= movesList.size()) {
-                comments.setText("No more moves in the input file");
                 System.out.println("No more moves in the input file");
                 return;
             }
             Graphics g = sp.getGraphics();
+
+
             int fromMove = Integer.parseInt(movesList.get(currentMove.size()).split("-")[0]);
             int toMove = Integer.parseInt(movesList.get(currentMove.size()).split("-")[1]);
+            List<Integer> availableJumps = new ArrayList<>();
+            availableJumps = sp.checkForAvailableJumps();
             if (toMove > 0 && toMove < 33 && fromMove > 0 && fromMove < 33) {
-                sp.moveDiagonal(g, fromMove, toMove);
-                currentMove.add(0);
+                if (availableJumps.size() > 0) {
+                    if (availableJumps.contains(fromMove)) {
+                        sp.moveDiagonal(g, fromMove, toMove);
+                        currentMove.add(0);
+                        availableJumps = null;
+                    } else {
+                        System.out.println("There is a jump available");
+                        currentMove.add(0);
+                        availableJumps = null;
+                    }
+                } else {
+                    sp.moveDiagonal(g, fromMove, toMove);
+                    currentMove.add(0);
+                }
             } else {
                 System.out.println(" The input value is not valid");
             }
-
         });
 
 
@@ -55,7 +70,7 @@ public class CheckerFrame extends JFrame {
         previousBtn.addActionListener(e -> {
             Graphics g = sp.getGraphics();
             if (currentMove.size() <= 0) {
-                comments.setText("No more moves to undo");
+//                message.setText("No more moves to undo");
                 System.out.println("No more moves to undo");
                 return;
             }
@@ -66,7 +81,7 @@ public class CheckerFrame extends JFrame {
 
 
         leftPanel.add(sp);
-        leftPanel.add(comments);
+        leftPanel.add(message);
 
         buttonsPanel.setBackground(new Color(0, 150, 0));
         buttonsPanel.setLayout(new BoxLayout(buttonsPanel, BoxLayout.Y_AXIS));
@@ -74,7 +89,7 @@ public class CheckerFrame extends JFrame {
         buttonsPanel.add(Box.createRigidArea(new Dimension(0, 100)));
         buttonsPanel.add(nextBtn);
         buttonsPanel.add(Box.createRigidArea(new Dimension(0, 100)));
-        buttonsPanel.add(comments);
+        buttonsPanel.add(message);
 
 
         sp.setPreferredSize(new Dimension(480, 480));

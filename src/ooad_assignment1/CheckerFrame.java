@@ -21,7 +21,7 @@ public class CheckerFrame extends JFrame {
 
         leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
 
-        SquarePanel sp = new SquarePanel();
+        BoardController controller = new BoardController();
         JPanel buttonsPanel = new JPanel();
 
         JButton previousBtn = new JButton("Previous");
@@ -38,17 +38,18 @@ public class CheckerFrame extends JFrame {
                 System.out.println("No more moves in the input file");
                 return;
             }
-            Graphics g = sp.getGraphics();
+            Graphics g = controller.getGraphics();
 
 
             int fromMove = Integer.parseInt(movesList.get(currentMove.size()).split("-")[0]);
             int toMove = Integer.parseInt(movesList.get(currentMove.size()).split("-")[1]);
             List<Integer> availableJumps = new ArrayList<>();
-            availableJumps = sp.checkForAvailableJumps();
+            availableJumps = controller.checkForAvailableJumps();
             if (toMove > 0 && toMove < 33 && fromMove > 0 && fromMove < 33) {
                 if (availableJumps.size() > 0) {
-                    if (availableJumps.contains(fromMove)) {
-                        sp.moveDiagonal(g, fromMove, toMove);
+
+                    if (availableJumps.contains(fromMove) && controller.calculateDistance(controller.blockInfoMap.get(fromMove), controller.blockInfoMap.get(toMove))) {
+                        controller.moveDiagonal(g, fromMove, toMove);
                         currentMove.add(0);
                         availableJumps = null;
                     } else {
@@ -57,8 +58,9 @@ public class CheckerFrame extends JFrame {
                         availableJumps = null;
                     }
                 } else {
-                    sp.moveDiagonal(g, fromMove, toMove);
+                    controller.moveDiagonal(g, fromMove, toMove);
                     currentMove.add(0);
+                    availableJumps = null;
                 }
             } else {
                 System.out.println(" The input value is not valid");
@@ -68,19 +70,19 @@ public class CheckerFrame extends JFrame {
 
 //on click of previous button it'll undo the move
         previousBtn.addActionListener(e -> {
-            Graphics g = sp.getGraphics();
+            Graphics g = controller.getGraphics();
             if (currentMove.size() <= 0) {
 //                message.setText("No more moves to undo");
                 System.out.println("No more moves to undo");
                 return;
             }
             currentMove.remove(currentMove.size() - 1);
-            sp.undo(g);
+            controller.undo(g);
 
         });
 
 
-        leftPanel.add(sp);
+        leftPanel.add(controller);
         leftPanel.add(message);
 
         buttonsPanel.setBackground(new Color(0, 150, 0));
@@ -92,7 +94,7 @@ public class CheckerFrame extends JFrame {
         buttonsPanel.add(message);
 
 
-        sp.setPreferredSize(new Dimension(480, 480));
+        controller.setPreferredSize(new Dimension(480, 480));
 
 
         mainPanel.add(leftPanel);

@@ -5,7 +5,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 
-public class SquarePanel extends JPanel {
+public class BoardController extends JPanel {
     int x = 0, y = 0;
     int dimension = 60;
     //numbers the dark blocks
@@ -18,13 +18,15 @@ public class SquarePanel extends JPanel {
     CheckerBlocksInfo checkerBlocks;
 
     //stores the color of the checker piece along with the block number
-    HashMap<Integer, CheckerPieceInfo> position = new HashMap<>();
+    HashMap<Integer, CheckerPieceInfo> checkerPieceInfoHashMap = new HashMap<>();
 
 
     //stores the coordinates, row and column of each of the checker blocks
     HashMap<Integer, CheckerBlocksInfo> blockInfoMap = new HashMap<>();
 
     Stack<CheckerPieceInfo> stack = new Stack<>();
+
+    Stack<Integer> jumpMadeStack = new Stack<>();
 
 
     //paint component creates the checker board with the initial placement of the checker pieces
@@ -46,12 +48,12 @@ public class SquarePanel extends JPanel {
 
                         if (i < 3) {
                             drawCircle(g, x, y, Color.black, false);
-                            position.put(number, new CheckerPieceInfo(number, Color.black, false));
+                            checkerPieceInfoHashMap.put(number, new CheckerPieceInfo(number, Color.black, false));
                         }
 
                         if (i > 4) {
                             drawCircle(g, x, y, Color.red, false);
-                            position.put(number, new CheckerPieceInfo(number, Color.red, false));
+                            checkerPieceInfoHashMap.put(number, new CheckerPieceInfo(number, Color.red, false));
                         }
 
                         isDark = false;
@@ -80,13 +82,13 @@ public class SquarePanel extends JPanel {
 
                         if (i < 3) {
                             drawCircle(g, x, y, Color.black, false);
-                            position.put(number, new CheckerPieceInfo(number, Color.black, false));
+                            checkerPieceInfoHashMap.put(number, new CheckerPieceInfo(number, Color.black, false));
 
                         }
 
                         if (i > 4) {
                             drawCircle(g, x, y, Color.red, false);
-                            position.put(number, new CheckerPieceInfo(number, Color.red, false));
+                            checkerPieceInfoHashMap.put(number, new CheckerPieceInfo(number, Color.red, false));
                         }
 
                         isDark = true;
@@ -123,25 +125,26 @@ public class SquarePanel extends JPanel {
         }
     }
 
-    //gives the color of the checker piece in the given position and returns null if there ain't any
+    //gives the color of the checker piece in the given checkerPieceInfoHashMap and returns null if there ain't any
     public CheckerPieceInfo getValueInPosition(int positionNumber) {
 
-        if (position.containsKey(positionNumber))
-            return position.get(positionNumber);
+        if (checkerPieceInfoHashMap.containsKey(positionNumber))
+            return checkerPieceInfoHashMap.get(positionNumber);
 
         return null;
 
     }
 
-    public List<Integer> checkForAvailableJumps() { List<Integer> validFromBlocksList = new ArrayList<>();
+    public List<Integer> checkForAvailableJumps() {
+        List<Integer> validFromBlocksList = new ArrayList<>();
         if (stack.size() > 0) {
             Color color = stack.peek().getColor();
-            Iterator it = position.entrySet().iterator();
+            Iterator it = checkerPieceInfoHashMap.entrySet().iterator();
             while (it.hasNext()) {
                 Map.Entry pair = (Map.Entry) it.next();
-                if (position.get(pair.getKey()).getColor() != color) {
-                    CheckerPieceInfo tempChecker = position.get(pair.getKey());
-                    int tempBlockNumber = position.get(pair.getKey()).getBlockNumber();
+                if (checkerPieceInfoHashMap.get(pair.getKey()).getColor() != color) {
+                    CheckerPieceInfo tempChecker = checkerPieceInfoHashMap.get(pair.getKey());
+                    int tempBlockNumber = checkerPieceInfoHashMap.get(pair.getKey()).getBlockNumber();
                     if (checkForLegalJumps(tempChecker, blockInfoMap.get(tempBlockNumber))) {
                         validFromBlocksList.add(tempBlockNumber);
                     }
@@ -177,7 +180,9 @@ public class SquarePanel extends JPanel {
                 return false;
             if (!hasCheckerPiece(middleBlock))
                 return false;
-            if (position.get(middleBlock).getColor().equals(Color.red))
+            if (checkerPieceInfoHashMap.get(middleBlock).getColor().equals(Color.red))
+                return false;
+            if (hasCheckerPiece(toBlock))
                 return false;
         }
         if (color.equals(Color.black)) {
@@ -187,23 +192,29 @@ public class SquarePanel extends JPanel {
                 return false;
             if (!hasCheckerPiece(middleBlock))
                 return false;
-            if (position.get(middleBlock).getColor().equals(Color.black))
+            if (checkerPieceInfoHashMap.get(middleBlock).getColor().equals(Color.black))
+                return false;
+            if (hasCheckerPiece(toBlock))
                 return false;
         }
-        if (color.equals(Color.red) && position.get(fromBlock).isKing()) {
+        if (color.equals(Color.red) && checkerPieceInfoHashMap.get(fromBlock).isKing()) {
             if (r2 < 0 || r2 > 8)
                 return false;
             if (!hasCheckerPiece(middleBlock))
                 return false;
-            if (position.get(middleBlock).getColor().equals(Color.red))
+            if (checkerPieceInfoHashMap.get(middleBlock).getColor().equals(Color.red))
+                return false;
+            if (hasCheckerPiece(toBlock))
                 return false;
         }
-        if (color.equals(Color.black) && position.get(fromBlock).isKing()) {
+        if (color.equals(Color.black) && checkerPieceInfoHashMap.get(fromBlock).isKing()) {
             if (r2 < 0 || r2 > 8)
                 return false;
             if (!hasCheckerPiece(middleBlock))
                 return false;
-            if (position.get(middleBlock).getColor().equals(Color.black))
+            if (checkerPieceInfoHashMap.get(middleBlock).getColor().equals(Color.black))
+                return false;
+            if (hasCheckerPiece(toBlock))
                 return false;
         }
 
@@ -226,7 +237,7 @@ public class SquarePanel extends JPanel {
     }
 
     //Validates that the move-from block has a checker piece and move-to block doesn't and moves the checker piece
-    public void moveDiagonal(Graphics x, CheckerBlocksInfo fromBlock, CheckerBlocksInfo toBlock, int fromNum, int toNum) {
+    public void moveDiagonal(Graphics graphics, CheckerBlocksInfo fromBlock, CheckerBlocksInfo toBlock, int fromNum, int toNum) {
 
 
         CheckerPieceInfo colorInFromBlockNumber;
@@ -240,44 +251,19 @@ public class SquarePanel extends JPanel {
         int fromX = fromBlock.getX();
         int fromY = fromBlock.getY();
 
+        boolean testForCompleteJump = false;
         //if there is not piece in the block return null
         Color pieceColor = getValueInPosition(fromNum) != null ? getValueInPosition(fromNum).getColor() : null;
 
-
-
-        if (!hasCheckerPiece(fromNum)) {
-            System.out.println("from " + fromNum + "has a no checker piece");
-            return;
-        }
-
-        if (position.get(fromNum).isKing()) {
-            if (!checkValidMoveForKing(pieceColor)) {
-                System.out.println(" player should alternate");
+        if (calculateDistance(row, col, toRow, toCol) == 1) {
+            if (!(validateConditions(fromNum, toNum, pieceColor))) {
                 return;
             }
-        } else {
 
-            if (!checkValidMove(fromNum, toNum, pieceColor)) {
-                System.out.println("Not a valid move");
+            if (!isDiagonal(row, col, toRow, toCol)) {
+                System.out.println("It is not a diagonal");
                 return;
             }
-        }
-
-        if (!isDiagonal(row, col, toRow, toCol)) {
-            System.out.println(" they are not diagonal");
-            return;
-        }
-
-        if (hasCheckerPiece(toNum)) {
-            System.out.println("to: " + toNum + " has piece. can't move");
-            return;
-        }
-
-
-        //if black is the first move then it returns to Checker frame and onclick of next it'll take next move ??????
-        if (stack.empty() && !pieceColor.equals(Color.red)) {
-            System.out.println("Player with red checkers should make the first move");
-            return;
         }
 
         /* if the distance between to and from block is more than 1, then it is a jump.
@@ -285,11 +271,24 @@ public class SquarePanel extends JPanel {
          * Also if distance is more than 2 and if the distance is odd then jump is not possible
          * because there'll be even number of blocks in between from and to blocks*/
 
-        if (calculateDistance(row, col, toRow, toCol) == 2) {
-            singleJump(fromNum, toNum, row, col, toRow, toCol, x);
+        else if (calculateDistance(row, col, toRow, toCol) == 2) {
+            if (!(validateConditions(fromNum, toNum, pieceColor))) {
+                return;
+            }
+
+            if (!isDiagonal(row, col, toRow, toCol)) {
+                System.out.println("It is not a diagonal");
+                return;
+            }
+            singleJump(fromNum, toNum, row, col, toRow, toCol, graphics);
+            testForCompleteJump = true;
+
 
         } else if (calculateDistance(row, col, toRow, toCol) > 2 && calculateDistance(row, col, toRow, toCol) % 2 == 0) {
-            multipleJumps(fromNum, toNum, row, col, toRow, toCol, x);
+            if (!(validateConditions(fromNum, toNum, pieceColor))) {
+                return;
+            }
+            fromNum = multipleJumps(fromNum, toNum, row, col, toRow, toCol, graphics);
 
         } else if (calculateDistance(row, col, toRow, toCol) > 2 && calculateDistance(row, col, toRow, toCol) % 2 != 0) {
             System.out.println("Jump is not possible from" + fromNum + " to" + toNum);
@@ -301,28 +300,28 @@ public class SquarePanel extends JPanel {
         int toY = toBlock.getY();
 
 
-        CheckerPieceInfo checkerPieceInfo = position.get(fromNum);
+        CheckerPieceInfo checkerPieceInfo = checkerPieceInfoHashMap.get(fromNum);
 
 //draw the checker piece in the ToBlock. if it has reached the other side make it a King, else just draw the piece in toBlock
         if (isCrowned(fromNum, toRow)) {
-            System.out.println(position.get(fromNum).getColor() + " is crowned");
-            x.setColor(pieceColor);
-            x.fillOval(toX + 10, toY + 10, 40, 40);
-            x.setColor(Color.white);
-            x.drawString("K", toX + 30, toY + 30);
+            System.out.println(checkerPieceInfoHashMap.get(fromNum).getColor() + " is crowned");
+            graphics.setColor(pieceColor);
+            graphics.fillOval(toX + 10, toY + 10, 40, 40);
+            graphics.setColor(Color.white);
+            graphics.drawString("K", toX + 30, toY + 30);
             checkerPieceInfo.setKing(true);
         } else {
-            drawCircle(x, toX, toY, pieceColor, position.get(fromNum).isKing());
+            drawCircle(graphics, toX, toY, pieceColor, checkerPieceInfoHashMap.get(fromNum).isKing());
         }
 
         //update the hash map by adding the checker piece in the move-to location and deleting it from the move-from location
         checkerPieceInfo.setBlockNumber(toNum);
-        position.put(toNum, checkerPieceInfo);
-        position.remove(fromNum);
+        checkerPieceInfoHashMap.remove(fromNum);
+        checkerPieceInfoHashMap.put(toNum, checkerPieceInfo);
 
         //remove the checker piece from fromBlock
-        x.setColor(Color.DARK_GRAY);
-        x.fillRect(fromX, fromY, dimension, dimension);
+        graphics.setColor(Color.DARK_GRAY);
+        graphics.fillRect(fromX, fromY, dimension, dimension);
 
 
         //push the toBlock and fromBlock info to the stack
@@ -335,49 +334,113 @@ public class SquarePanel extends JPanel {
         colorInToBlockNumber.setBlockNumber(toNum);
         colorInToBlockNumber.setColor(pieceColor);
         stack.push(colorInToBlockNumber);
+
+        if (testForCompleteJump && checkForLegalJumps(checkerPieceInfoHashMap.get(toNum), blockInfoMap.get(toNum))) {
+            System.out.println("jump not complete");
+            undo(getGraphics());
+            testForCompleteJump = false;
+        }
+
+
     }
 
-    private void multipleJumps(int fromNum, int toNum, int row, int col, int toRow, int toCol, Graphics x) {
-        int tempToNum = 0;
-        if (fromNum > toNum) {
-            if (col < toCol) {
-                tempToNum = fromNum - 7;
+    private boolean validateConditions(int fromNum, int toNum, Color pieceColor) {
 
-                intermediateJumps(fromNum, toNum, row, col, toRow, toCol, x, tempToNum);
+        if (!hasCheckerPiece(fromNum)) {
+            System.out.println("from " + fromNum + "has a no checker piece");
+            return false;
+        }
 
-            } else if (col > toCol) {
-                tempToNum = fromNum - 9;
-
-                intermediateJumps(fromNum, toNum, row, col, toRow, toCol, x, tempToNum);
-
-
+        if (checkerPieceInfoHashMap.get(fromNum).isKing()) {
+            if (!checkValidMoveForKing(pieceColor)) {
+                System.out.println(" player should alternate");
+                return false;
             }
-
         } else {
-            if (col < toCol) {
-                tempToNum = fromNum + 9;
-                intermediateJumps(fromNum, toNum, row, col, toRow, toCol, x, tempToNum);
-            } else if (col > toCol) {
-                tempToNum = fromNum + 7;
-                intermediateJumps(fromNum, toNum, row, col, toRow, toCol, x, tempToNum);
+
+            if (!checkValidMove(fromNum, toNum, pieceColor)) {
+                System.out.println("Not a valid move");
+                return false;
             }
+        }
+
+
+        if (hasCheckerPiece(toNum)) {
+            System.out.println("to: " + toNum + " has piece. can't move");
+            return false;
+        }
+
+
+        //if black is the first move then it returns to Checker frame and onclick of next it'll take next move ??????
+        if (stack.empty() && !pieceColor.equals(Color.red)) {
+            System.out.println("Player with red checkers should make the first move");
+            return false;
+        }
+        return true;
+    }
+
+
+    private int multipleJumps(int fromNum, int toNum, int row, int col, int toRow, int toCol, Graphics graphics) {
+
+        int tempToNum = 0;
+        int jumpCount = 0;
+        while (checkForLegalJumps(checkerPieceInfoHashMap.get(fromNum), blockInfoMap.get(fromNum))) {
+            if (checkerPieceInfoHashMap.get(fromNum).getColor().equals(Color.red)) {
+
+                if (canJump(checkerPieceInfoHashMap.get(fromNum).getColor(), row, col, row - 1, col + 1, row - 2, col + 2, fromNum, fromNum - 7)) {
+                    tempToNum = fromNum - 7;
+                    makeTempJump(fromNum, tempToNum, graphics);
+
+
+                }
+                if (canJump(checkerPieceInfoHashMap.get(fromNum).getColor(), row, col, row - 1, col - 1, row - 2, col - 2, fromNum, fromNum - 9)) {
+                    tempToNum = fromNum - 9;
+                    makeTempJump(fromNum, tempToNum, graphics);
+                }
+            } else if (checkerPieceInfoHashMap.get(fromNum).getColor().equals(Color.black)) {
+                if (canJump(checkerPieceInfoHashMap.get(fromNum).getColor(), row, col, row + 1, col + 1, row + 2, col + 2, fromNum, fromNum + 9)) {
+                    tempToNum = fromNum + 9;
+                    makeTempJump(fromNum, tempToNum, graphics);
+                }
+
+                if (canJump(checkerPieceInfoHashMap.get(fromNum).getColor(), row, col, row + 1, col - 1, row + 2, col - 2, fromNum, fromNum + 7)) {
+                    tempToNum = fromNum + 7;
+                    makeTempJump(fromNum, tempToNum, graphics);
+                }
+            }
+            jumpCount++;
+            fromNum = tempToNum;
+
 
         }
+        if (tempToNum == toNum) {
+            checkerPieceInfoHashMap.put(toNum, new CheckerPieceInfo(toNum, checkerPieceInfoHashMap.get(fromNum).getColor(), checkerPieceInfoHashMap.get(fromNum).isKing()));
+            return fromNum;
+        } else {
+            System.out.println("Jump not possible. Invalid input");
+            jumpMadeStack.clear();
+            return fromNum;
+        }
+
+
+    }
+
+    private void makeTempJump(int fromNum, int tempToNum, Graphics graphics) {
+        singleJump(fromNum, tempToNum, blockInfoMap.get(fromNum).getRow(), blockInfoMap.get(fromNum).getCol(), blockInfoMap.get(tempToNum).getRow(), blockInfoMap.get(tempToNum).getCol(), graphics);
+
+        //push the temporary jump to the stack and update the other stack
+        jumpMadeStack.push(tempToNum);
+        checkerPieceInfoHashMap.put(tempToNum, new CheckerPieceInfo(tempToNum, checkerPieceInfoHashMap.get(fromNum).getColor(), checkerPieceInfoHashMap.get(fromNum).isKing()));
+        checkerPieceInfoHashMap.remove(fromNum);
     }
 
 
-    private void intermediateJumps(int fromNum, int toNum, int row, int col, int toRow, int toCol, Graphics x, int tempToNum) {
-        singleJump(fromNum, tempToNum, row, col, blockInfoMap.get(tempToNum).getRow(), blockInfoMap.get(tempToNum).getCol(), x);
-        position.put(tempToNum, new CheckerPieceInfo(tempToNum, position.get(fromNum).getColor(), false));
-        singleJump(tempToNum, toNum, blockInfoMap.get(tempToNum).getRow(), blockInfoMap.get(tempToNum).getCol(), toRow, toCol, x);
-        position.remove(tempToNum);
-    }
 
    /* Before jumping, it
     checks if the middle Block had a checker piece in it. If its not there it shouldn't jump.
     If there a piece in the middle block, then it'll jump over the block and removes the piece in the middle block */
 
-    private void singleJump(int fromNum, int toNum, int row, int col, int toRow, int toCol, Graphics x) {
+    private void singleJump(int fromNum, int toNum, int row, int col, int toRow, int toCol, Graphics graphics) {
         //have a function for middle block. Use that .........................????
         int midBlockNumber = 0;
 
@@ -391,16 +454,16 @@ public class SquarePanel extends JPanel {
             return;
         }
 
-        if (position.get(fromNum).getColor().equals(position.get(midBlockNumber).getColor())) {
-            System.out.println(position.get(fromNum).getColor() + " can't jump on " + position.get(midBlockNumber).getColor());
+        if (checkerPieceInfoHashMap.get(fromNum).getColor().equals(checkerPieceInfoHashMap.get(midBlockNumber).getColor())) {
+            System.out.println(checkerPieceInfoHashMap.get(fromNum).getColor() + " can't jump on " + checkerPieceInfoHashMap.get(midBlockNumber).getColor());
             return;
         }
 
         //remove the piece from middle block
-        x.setColor(Color.DARK_GRAY);
-        x.fillRect(((col + toCol) / 2) * dimension, ((row + toRow) / 2) * dimension, dimension, dimension);
+        graphics.setColor(Color.DARK_GRAY);
+        graphics.fillRect(((col + toCol) / 2) * dimension, ((row + toRow) / 2) * dimension, dimension, dimension);
 
-        position.remove(midBlockNumber);
+        checkerPieceInfoHashMap.remove(midBlockNumber);
 
     }
 
@@ -409,7 +472,11 @@ public class SquarePanel extends JPanel {
     }
 
 
-    private int calculateDistance(int row, int col, int toRow, int toCol) {
+    public boolean calculateDistance(CheckerBlocksInfo fromBlock, CheckerBlocksInfo toBlock) {
+        return (calculateDistance(fromBlock.getRow(), fromBlock.getCol(), toBlock.getRow(), toBlock.getCol()) > 1);
+    }
+
+    public int calculateDistance(int row, int col, int toRow, int toCol) {
         return Math.max(Math.abs(row - toRow), Math.abs(col - toCol));
     }
 
@@ -442,7 +509,7 @@ public class SquarePanel extends JPanel {
 
     private boolean isCrowned(int fromNum, int toRow) {
 
-        if (position.get(fromNum).getColor().equals(Color.red) && toRow == 0 || position.get(fromNum).getColor().equals(Color.black) && toRow == 7)
+        if (checkerPieceInfoHashMap.get(fromNum).getColor().equals(Color.red) && toRow == 0 || checkerPieceInfoHashMap.get(fromNum).getColor().equals(Color.black) && toRow == 7)
             return true;
         return false;
     }
@@ -480,11 +547,11 @@ public class SquarePanel extends JPanel {
                 midBlockNumber = (previousFromBlock.getBlockNumber() + previousToBlock.getBlockNumber()) / 2;
 
             //if centre is King not handled ??????????????
-            position.put(midBlockNumber, new CheckerPieceInfo(midBlockNumber, color, false));
+            checkerPieceInfoHashMap.put(midBlockNumber, new CheckerPieceInfo(midBlockNumber, color, false));
         }
 
-        position.remove(previousToBlock.getBlockNumber());
-        position.put(previousFromBlock.getBlockNumber(), previousFromBlock);
+        checkerPieceInfoHashMap.remove(previousToBlock.getBlockNumber());
+        checkerPieceInfoHashMap.put(previousFromBlock.getBlockNumber(), previousFromBlock);
 
 
     }

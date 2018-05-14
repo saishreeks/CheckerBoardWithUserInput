@@ -8,22 +8,25 @@ import java.util.List;
 
 public class CheckerFrame extends JFrame {
 
+    JLabel message = new JLabel("hi");
+
     public CheckerFrame() {
 
         JPanel mainPanel = new JPanel();
         mainPanel.setBackground(new Color(0, 150, 0));
+//        mainPanel.setLayout(new BorderLayout());
 
         JPanel leftPanel = new JPanel();
 
-        JLabel message = new JLabel("");
-        message.setBackground(new Color(0, 150, 0));
-        message.setSize(300, 50);
+
+//        message.setBackground(new Color(0, 150, 0));
+//        message.setSize(300, 50);
 
         leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
 
         BoardController controller = new BoardController();
+        controller.setBorder(BorderFactory.createLineBorder(Color.black));
         JPanel buttonsPanel = new JPanel();
-
         JButton previousBtn = new JButton("Previous");
         JButton nextBtn = new JButton("Next");
 
@@ -83,7 +86,7 @@ public class CheckerFrame extends JFrame {
 
 
         leftPanel.add(controller);
-        leftPanel.add(message);
+//        leftPanel.add(message);
 
         buttonsPanel.setBackground(new Color(0, 150, 0));
         buttonsPanel.setLayout(new BoxLayout(buttonsPanel, BoxLayout.Y_AXIS));
@@ -91,14 +94,16 @@ public class CheckerFrame extends JFrame {
         buttonsPanel.add(Box.createRigidArea(new Dimension(0, 100)));
         buttonsPanel.add(nextBtn);
         buttonsPanel.add(Box.createRigidArea(new Dimension(0, 100)));
-        buttonsPanel.add(message);
+//        buttonsPanel.add(message);
 
 
         controller.setPreferredSize(new Dimension(480, 480));
 
 
+
         mainPanel.add(leftPanel);
         mainPanel.add(buttonsPanel);
+//        mainPanel.add(message);
 
 
         setVisible(true);

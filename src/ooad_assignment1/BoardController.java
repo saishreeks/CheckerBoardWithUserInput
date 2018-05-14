@@ -15,6 +15,9 @@ public class BoardController extends JPanel {
     //to check for even row
     boolean evenRow = true;
 
+
+
+
     CheckerBlocksInfo checkerBlocks;
 
     //stores the color of the checker piece along with the block number
@@ -247,7 +250,6 @@ public class BoardController extends JPanel {
         int col = fromBlock.getCol();
         int toRow = toBlock.getRow();
         int toCol = toBlock.getCol();
-
         int fromX = fromBlock.getX();
         int fromY = fromBlock.getY();
 

@@ -2,116 +2,121 @@ package ooad_assignment1;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CheckerFrame extends JFrame {
+public class CheckerFrame extends JFrame implements ActionListener {
 
-    JLabel message = new JLabel("hi");
+   public static JLabel message = new JLabel("", JLabel.CENTER);
+   private JButton previousBtn = new JButton("Previous");
+   private JButton nextBtn = new JButton("Next");
+   BoardController boardController = new BoardController();
+
+    List<Integer> currentMove = new ArrayList<>();
+
+
 
     public CheckerFrame() {
 
         JPanel mainPanel = new JPanel();
-        mainPanel.setBackground(new Color(0, 150, 0));
-//        mainPanel.setLayout(new BorderLayout());
+        mainPanel.setLayout(null);  // I will do the layout myself.
+        mainPanel.setPreferredSize(new Dimension(800, 600));
 
-        JPanel leftPanel = new JPanel();
+        mainPanel.setBackground(new Color(0, 150, 0));  // Dark green background.
+        mainPanel.add(boardController);
+        mainPanel.add(previousBtn);
+        mainPanel.add(nextBtn);
+        mainPanel.add(message);
+
+        /* Set the position and size of each component by calling
+       its setBounds() method. */
+
+        boardController.setBorder(BorderFactory.createLineBorder(Color.black));
+        boardController.setBounds(20, 20, 480, 480);
+        previousBtn.setBounds(580, 60, 120, 30);
+        nextBtn.setBounds(580, 120, 120, 30);
+        message.setBounds(20, 520, 350, 30);
+
+        nextBtn.addActionListener(this);
+        previousBtn.addActionListener(this);
+        message.setFont(new Font("Serif", Font.BOLD, 16));
 
 
-//        message.setBackground(new Color(0, 150, 0));
-//        message.setSize(300, 50);
-
-        leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
-
-        BoardController controller = new BoardController();
-        controller.setBorder(BorderFactory.createLineBorder(Color.black));
-        JPanel buttonsPanel = new JPanel();
-        JButton previousBtn = new JButton("Previous");
-        JButton nextBtn = new JButton("Next");
+        setVisible(true);
+        setSize(800, 600);
+        setTitle("Checkers");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        add(mainPanel);
+        setResizable(false);
 
 
-//move in the input file is stored in movesList
+    }
+
+
+    public void actionPerformed(ActionEvent evt) {
+        Object src = evt.getSource();
+        if (src == nextBtn)
+            doNextMove();
+        else if (src == previousBtn)
+            doUndo();
+    }
+
+    private void doUndo() {
+        Graphics g = boardController.getGraphics();
+        if (currentMove.size() <= 0) {
+            message.setText("No more moves in the input file to undo");
+            System.out.println("No more moves in the input file to undo");
+            return;
+        }
+        currentMove.remove(currentMove.size() - 1);
+        boardController.undo(g);
+    }
+
+    private void doNextMove() {
+        //moves in the input file is stored in movesList
         List<String> movesList = readMovesFromFile();
-        List<Integer> currentMove = new ArrayList<>();
 
 
-        nextBtn.addActionListener(e -> {
-            if (currentMove.size() >= movesList.size()) {
-                System.out.println("No more moves in the input file");
-                return;
-            }
-            Graphics g = controller.getGraphics();
+        if (currentMove.size() >= movesList.size()) {
+            message.setText("No more moves in the input file");
+            System.out.println("No more moves in the input file");
+            return;
+        }
+        Graphics g = boardController.getGraphics();
 
 
-            int fromMove = Integer.parseInt(movesList.get(currentMove.size()).split("-")[0]);
-            int toMove = Integer.parseInt(movesList.get(currentMove.size()).split("-")[1]);
-            List<Integer> availableJumps = new ArrayList<>();
-            availableJumps = controller.checkForAvailableJumps();
-            if (toMove > 0 && toMove < 33 && fromMove > 0 && fromMove < 33) {
-                if (availableJumps.size() > 0) {
+        int fromMove = Integer.parseInt(movesList.get(currentMove.size()).split("-")[0]);
+        int toMove = Integer.parseInt(movesList.get(currentMove.size()).split("-")[1]);
+        List<Integer> availableJumps = new ArrayList<>();
+        availableJumps = boardController.checkForAvailableJumps();
+        if (toMove > 0 && toMove < 33 && fromMove > 0 && fromMove < 33) {
+            if (availableJumps.size() > 0) {
 
-                    if (availableJumps.contains(fromMove) && controller.calculateDistance(controller.blockInfoMap.get(fromMove), controller.blockInfoMap.get(toMove))) {
-                        controller.moveDiagonal(g, fromMove, toMove);
-                        currentMove.add(0);
-                        availableJumps = null;
-                    } else {
-                        System.out.println("There is a jump available");
-                        currentMove.add(0);
-                        availableJumps = null;
-                    }
+                if (availableJumps.contains(fromMove) && boardController.calculateDistance(boardController.blockInfoMap.get(fromMove), boardController.blockInfoMap.get(toMove))) {
+                    boardController.moveDiagonal(g, fromMove, toMove);
+                    currentMove.add(0);
+                    availableJumps = null;
                 } else {
-                    controller.moveDiagonal(g, fromMove, toMove);
+                    message.setText("There is a jump available");
+                    System.out.println("There is a jump available");
                     currentMove.add(0);
                     availableJumps = null;
                 }
             } else {
-                System.out.println(" The input value is not valid");
+                boardController.moveDiagonal(g, fromMove, toMove);
+                currentMove.add(0);
+                availableJumps = null;
             }
-        });
+        } else {
+            message.setText("The input value is not valid");
+            System.out.println(" The input value is not valid");
+        }
 
-
-//on click of previous button it'll undo the move
-        previousBtn.addActionListener(e -> {
-            Graphics g = controller.getGraphics();
-            if (currentMove.size() <= 0) {
-//                message.setText("No more moves to undo");
-                System.out.println("No more moves to undo");
-                return;
-            }
-            currentMove.remove(currentMove.size() - 1);
-            controller.undo(g);
-
-        });
-
-
-        leftPanel.add(controller);
-//        leftPanel.add(message);
-
-        buttonsPanel.setBackground(new Color(0, 150, 0));
-        buttonsPanel.setLayout(new BoxLayout(buttonsPanel, BoxLayout.Y_AXIS));
-        buttonsPanel.add(previousBtn);
-        buttonsPanel.add(Box.createRigidArea(new Dimension(0, 100)));
-        buttonsPanel.add(nextBtn);
-        buttonsPanel.add(Box.createRigidArea(new Dimension(0, 100)));
-//        buttonsPanel.add(message);
-
-
-        controller.setPreferredSize(new Dimension(480, 480));
-
-
-
-        mainPanel.add(leftPanel);
-        mainPanel.add(buttonsPanel);
-//        mainPanel.add(message);
-
-
-        setVisible(true);
-        setSize(960, 600);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        add(mainPanel);
-        setResizable(false);
     }
+
 
     //reads the moves from the input file and stores it in an ArrayList
     private List<String> readMovesFromFile() {

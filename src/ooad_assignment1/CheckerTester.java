@@ -1,11 +1,9 @@
 package ooad_assignment1;
 
 import javax.swing.*;
-import java.awt.*;
 
-public class CheckerTester extends JPanel {
+public class CheckerTester {
     public static void main(String[] args) {
-        CheckerFrame checkerFrame = new CheckerFrame();
-
+        CheckerBoard checkerFrame = new CheckerBoard();
     }
 }

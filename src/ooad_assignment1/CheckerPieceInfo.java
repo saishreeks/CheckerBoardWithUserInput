@@ -2,8 +2,8 @@ package ooad_assignment1;
 
 import java.awt.*;
 
-/* This class gives the information about the checker piece in a given block.
-* It gives the color of the checker piece in a given block number and states whether it is a king or not*/
+/** This class gives the information about the checker piece in a given block.
+* It gives the color of the checker piece in a given block number and states whether it is a king or not */
 
 public class CheckerPieceInfo {
 

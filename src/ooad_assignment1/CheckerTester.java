@@ -5,5 +5,6 @@ package ooad_assignment1;
 public class CheckerTester {
     public static void main(String[] args) {
         CheckerBoard checkerFrame = new CheckerBoard();
+
     }
 }

@@ -55,6 +55,7 @@ public class CheckerBoard extends JFrame implements ActionListener {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         add(mainPanel);
         setResizable(false);
+
     }
 
     /**

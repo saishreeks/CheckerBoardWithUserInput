@@ -64,6 +64,7 @@ public class CheckerBoard extends JFrame implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         boardController.printFirst();
         startGameButtin.setVisible(false);
+        boardController.enabled=true;
         //        this.disable();
     }
 }

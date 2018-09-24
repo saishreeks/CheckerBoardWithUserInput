@@ -23,9 +23,9 @@ public class BoardManager extends JPanel implements MouseListener {
     ArrayList<Integer> validCanBeMovedBlock = new ArrayList<>(); // for normal moves
     List<Integer> validJumpsForFromBlock = new ArrayList<>(); // for jumps
     List<Integer> possibleToList; // gives the possible to moves to be highlighted
-
+    boolean enabled = false;
     HashMap<RowColumnMapping, Integer> rowColBlckNumHashMap = new HashMap<>();
-    int clickedBlock=0;
+    int clickedBlock = 0;
 
     BoardManager() {
         addMouseListener(this);
@@ -68,7 +68,7 @@ public class BoardManager extends JPanel implements MouseListener {
                         x += dimension;
                         String s = String.valueOf(number);
                         g.setColor(Color.WHITE);
-                        g.drawString(s, x - 15, y + 10);
+//                        g.drawString(s, x - 15, y + 10);
 
 
                     } else {
@@ -105,7 +105,7 @@ public class BoardManager extends JPanel implements MouseListener {
 
                         String s = String.valueOf(number);
                         g.setColor(Color.WHITE);
-                        g.drawString(s, x - 15, y + 10);
+//                        g.drawString(s, x - 15, y + 10);
 
                     } else {
                         g.setColor(Color.LIGHT_GRAY);
@@ -114,7 +114,6 @@ public class BoardManager extends JPanel implements MouseListener {
                         x += dimension;
                     }
                 }
-
 
 
             }
@@ -131,10 +130,10 @@ public class BoardManager extends JPanel implements MouseListener {
 
     protected void printFirst() {
 
-        highLightBlock(21,Color.CYAN);
-        highLightBlock(22,Color.CYAN);
-        highLightBlock(23,Color.CYAN);
-        highLightBlock(24,Color.CYAN);
+        highLightBlock(21, Color.CYAN);
+        highLightBlock(22, Color.CYAN);
+        highLightBlock(23, Color.CYAN);
+        highLightBlock(24, Color.CYAN);
     }
 
 
@@ -361,7 +360,7 @@ public class BoardManager extends JPanel implements MouseListener {
         int toX = toBlock.getX();
         int toY = toBlock.getY();
         CheckerPieceInfo checkerPieceInfo = checkerPieceInfoHashMap.get(fromNum);
-        CheckerPieceInfo toPieceInfo =  checkerPieceInfoHashMap.get(toNum);
+        CheckerPieceInfo toPieceInfo = checkerPieceInfoHashMap.get(toNum);
 
 
 /* draw the checker piece in the ToBlock. if it has reached the either sides of the board make it a King,
@@ -395,7 +394,7 @@ else just draw the piece in toBlock */
         fromCheckerPieceInfo.setBlockNumber(fromNum);
         fromCheckerPieceInfo.setColor(pieceColor);
         if (checkerPieceInfoHashMap.get(toNum).isKing())
-        fromCheckerPieceInfo.setKing(true);
+            fromCheckerPieceInfo.setKing(true);
         stack.push(fromCheckerPieceInfo);
 
         toCheckerPieceInfo = new CheckerPieceInfo();
@@ -754,7 +753,7 @@ else just draw the piece in toBlock */
 
     private void highLightBlock(int tempBlockNumber, Color color) {
 
-        if (tempBlockNumber !=0){ // not sure??????????
+        if (tempBlockNumber != 0) { // not sure??????????
 
             CheckerBlocksInfo blocksInfo = blockInfoMap.get(tempBlockNumber);
             Graphics g = getGraphics();
@@ -767,7 +766,7 @@ else just draw the piece in toBlock */
 
     private void removeHighLightCanBeMovedBlocks(int tempBlockNumber) {
 
-        if (tempBlockNumber !=0){  // not sure??????????????????
+        if (tempBlockNumber != 0) {  // not sure??????????????????
 
             CheckerBlocksInfo fromBlock = blockInfoMap.get(tempBlockNumber);
             Graphics g = getGraphics();
@@ -841,112 +840,118 @@ else just draw the piece in toBlock */
     @Override
     public void mousePressed(MouseEvent e) {
 
-
-        CheckerBoard.message.setText("");
-        int col = e.getX() / 60;
-        int row = e.getY() / 60;
-        RowColumnMapping obj = new RowColumnMapping(row, col);
+        if (enabled) {
 
 
-        /* if user clicks on light colored blocks its an invalid move */
-        if (!rowColBlckNumHashMap.containsKey(obj)) {
-            removeHighLightCanBeMovedBlocks(fromMove);
-            fromMove = 0;
-            toMove = 0;
-            CheckerBoard.message.setText("Invalid Move");
-            System.out.println("invalid!!!!!!!!!");
-            return;
-        }
-        if (fromMove > 0) {
+            CheckerBoard.message.setText("");
+            int col = e.getX() / 60;
+            int row = e.getY() / 60;
+            RowColumnMapping obj = new RowColumnMapping(row, col);
+
+
+            /* if user clicks on light colored blocks its an invalid move */
+            if (!rowColBlckNumHashMap.containsKey(obj)) {
+                removeHighLightCanBeMovedBlocks(fromMove);
+                fromMove = 0;
+                toMove = 0;
+                CheckerBoard.message.setText("Invalid Move");
+                System.out.println("invalid!!!!!!!!!");
+                return;
+            }
+            if (fromMove > 0) {
             /* if the user changes the FROM piece and selects another FROM piece among the highlighted ones,
             then the newly selected piece is assigned to fromMove */
-            if (hasCheckerPiece(rowColBlckNumHashMap.get(obj)) && (checkerPieceInfoHashMap.get(fromMove).getColor().equals(checkerPieceInfoHashMap.get(rowColBlckNumHashMap.get(obj)).getColor()))) {
-                fromMove = rowColBlckNumHashMap.get(obj);
-                /* the highlighted possible moves (green ) for previous selected piece is removed*/
-                if (!possibleToList.isEmpty()) {
-                    for (Integer i : possibleToList)
-                        removeHighLightCanBeMovedBlocks(i);
+                if (hasCheckerPiece(rowColBlckNumHashMap.get(obj)) && (checkerPieceInfoHashMap.get(fromMove).getColor().equals(checkerPieceInfoHashMap.get(rowColBlckNumHashMap.get(obj)).getColor()))) {
+                    fromMove = rowColBlckNumHashMap.get(obj);
+                    /* the highlighted possible moves (green ) for previous selected piece is removed*/
+                    if (!possibleToList.isEmpty()) {
+                        for (Integer i : possibleToList)
+                            removeHighLightCanBeMovedBlocks(i);
+                    }
+                    clickBlock(fromMove);
+                    return;
                 }
+                toMove = rowColBlckNumHashMap.get(obj);
+            } else {
+                fromMove = rowColBlckNumHashMap.get(obj);
+                if (!hasCheckerPiece(fromMove)) {
+                    System.out.println("There's no checker piece");
+                    CheckerBoard.message.setText("There's no checker piece");
+                    fromMove = 0;
+                    return;
+                }
+
+                if (stack.size() > 0 && stack.peek().getColor().equals(checkerPieceInfoHashMap.get(fromMove).getColor())) {
+                    CheckerBoard.message.setText("Opponent's turn");
+                    fromMove = 0;
+                    return;
+                }
+
                 clickBlock(fromMove);
-                return;
-            }
-            toMove = rowColBlckNumHashMap.get(obj);
-        } else {
-            fromMove = rowColBlckNumHashMap.get(obj);
-            if (!hasCheckerPiece(fromMove)) {
-                System.out.println("There's no checker piece");
-                CheckerBoard.message.setText("There's no checker piece");
-                fromMove = 0;
-                return;
-            }
 
-            if(stack.size()>0 && stack.peek().getColor().equals(checkerPieceInfoHashMap.get(fromMove).getColor())){
-                CheckerBoard.message.setText("Opponent's turn");
-                fromMove =0;
-                return;
             }
-
-            clickBlock(fromMove);
-
-        }
-        if ((fromMove > 0 && toMove > 0) && (fromMove != toMove)) {
-            List<Integer> availableJumps = new ArrayList<>();
-            availableJumps = checkForAvailableJumps();
-            if (availableJumps.size() > 0) {
-                if (availableJumps.contains(fromMove) && calculateDistance(blockInfoMap.get(fromMove), blockInfoMap.get(toMove))) {
+            if ((fromMove > 0 && toMove > 0) && (fromMove != toMove)) {
+                List<Integer> availableJumps = new ArrayList<>();
+                availableJumps = checkForAvailableJumps();
+                if (availableJumps.size() > 0) {
+                    if (availableJumps.contains(fromMove) && calculateDistance(blockInfoMap.get(fromMove), blockInfoMap.get(toMove))) {
+                        moveDiagonal(getGraphics(), fromMove, toMove);
+                        fromMove = 0;
+                        toMove = 0;
+                        availableJumps.clear();
+                    } else {
+                        CheckerBoard.message.setText("There is a jump available");
+                        System.out.println("There is a jump available");
+                        fromMove = 0;
+                        toMove = 0;
+                        availableJumps.clear();
+//                    return;
+                    }
+                } else {
                     moveDiagonal(getGraphics(), fromMove, toMove);
                     fromMove = 0;
                     toMove = 0;
                     availableJumps.clear();
-                } else {
-                    CheckerBoard.message.setText("There is a jump available");
-                    System.out.println("There is a jump available");
-                    fromMove = 0;
-                    toMove = 0;
-                    availableJumps.clear();
-//                    return;
                 }
-            } else {
-                moveDiagonal(getGraphics(), fromMove, toMove);
-                fromMove = 0;
-                toMove = 0;
-                availableJumps.clear();
+
+                /* the highlighted possible moves (green ) is removed*/
+                if (!possibleToList.isEmpty()) {
+                    for (Integer i : possibleToList)
+                        removeHighLightCanBeMovedBlocks(i);
+                }
+
+
+                /** soon after a move is made, we have to highlight the next valid checkers that can be moved. first check for possible jumps
+                 * if jumps are present highlight only those blocks, else highlight the other blocks which can be moved*/
+
+                if (!validJumpsForFromBlock.isEmpty()) {
+                    for (Integer i : validJumpsForFromBlock)
+                        removeHighLightCanBeMovedBlocks(i);
+                }
+
+
+                if (!validCanBeMovedBlock.isEmpty()) { //???????????????
+                    for (Integer i : validCanBeMovedBlock)
+                        removeHighLightCanBeMovedBlocks(i);
+                }
+
+                /* removes the white highlight*/ // not working ??????????????????
+
+
+                gameInProgressHighlightFromBlocks(getGraphics());
+
             }
-
-            /* the highlighted possible moves (green ) is removed*/
-            if (!possibleToList.isEmpty()) {
-                for (Integer i : possibleToList)
-                    removeHighLightCanBeMovedBlocks(i);
-            }
-
-
-            /** soon after a move is made, we have to highlight the next valid checkers that can be moved. first check for possible jumps
-             * if jumps are present highlight only those blocks, else highlight the other blocks which can be moved*/
-
-            if (!validJumpsForFromBlock.isEmpty()) {
-                for (Integer i : validJumpsForFromBlock)
-                    removeHighLightCanBeMovedBlocks(i);
-            }
-
-
-            if (!validCanBeMovedBlock.isEmpty()) { //???????????????
-                for (Integer i : validCanBeMovedBlock)
-                    removeHighLightCanBeMovedBlocks(i);
-            }
-
-            /* removes the white highlight*/ // not working ??????????????????
-
-
-            gameInProgressHighlightFromBlocks(getGraphics());
-
+        }
+        else {
+            CheckerBoard.message.setText("Click on Start game before you proceed");
         }
 
     }
 
     private void clickBlock(int fromMove) {
-       if(clickedBlock > 0) removeHighLightCanBeMovedBlocks(clickedBlock);
-        clickedBlock=fromMove;
-        highLightBlock(fromMove,Color.white);
+        if (clickedBlock > 0) removeHighLightCanBeMovedBlocks(clickedBlock);
+        clickedBlock = fromMove;
+        highLightBlock(fromMove, Color.white);
 
         highLightPossibleToBlocks(fromMove); // green Highlight
 
@@ -954,12 +959,11 @@ else just draw the piece in toBlock */
 
     private void addPossibleToBlockToList(RowColumnMapping possible1) {
         int possibleToBlockNumber = rowColBlckNumHashMap.get(possible1);
-        if (!hasCheckerPiece(possibleToBlockNumber)){
+        if (!hasCheckerPiece(possibleToBlockNumber)) {
             highLightBlock(possibleToBlockNumber, Color.green);
             possibleToList.add(possibleToBlockNumber);
         }
     }
-
 
 
     private void highLightPossibleToBlocks(int fromMove) {
@@ -974,26 +978,26 @@ else just draw the piece in toBlock */
             int row = blockInfoMap.get(fromMove).getRow();
             int col = blockInfoMap.get(fromMove).getCol();
 
-            if (checkerPieceInfoHashMap.get(fromMove).isKing()){
-                if ((row-1)>0 && (col-1)>0){
+            if (checkerPieceInfoHashMap.get(fromMove).isKing()) {
+                if ((row - 1) > 0 && (col - 1) > 0) {
                     RowColumnMapping possible1 = new RowColumnMapping(row - 1, col - 1);
                     addPossibleToBlockToList(possible1);
                 }
 
-               if ((row-1)>0 && (col+1)<8){
-                   RowColumnMapping possible2 = new RowColumnMapping(row - 1, col + 1);
-                   addPossibleToBlockToList(possible2);
-               }
+                if ((row - 1) > 0 && (col + 1) < 8) {
+                    RowColumnMapping possible2 = new RowColumnMapping(row - 1, col + 1);
+                    addPossibleToBlockToList(possible2);
+                }
 
-               if ((row+1)<8 && (col-1)>0){
-                   RowColumnMapping possible3 = new RowColumnMapping(row + 1, col - 1);
-                   addPossibleToBlockToList(possible3);
-               }
+                if ((row + 1) < 8 && (col - 1) > 0) {
+                    RowColumnMapping possible3 = new RowColumnMapping(row + 1, col - 1);
+                    addPossibleToBlockToList(possible3);
+                }
 
-               if ((row+1)<8 && (col+1)<8){
-                   RowColumnMapping possible4 = new RowColumnMapping(row + 1, col + 1);
-                   addPossibleToBlockToList(possible4);
-               }
+                if ((row + 1) < 8 && (col + 1) < 8) {
+                    RowColumnMapping possible4 = new RowColumnMapping(row + 1, col + 1);
+                    addPossibleToBlockToList(possible4);
+                }
 
                 return;
             }
@@ -1001,10 +1005,10 @@ else just draw the piece in toBlock */
 
             if (checkerPieceInfoHashMap.get(fromMove).getColor().equals(Color.red)) {
 
-                if (row-1 < 0)
+                if (row - 1 < 0)
                     return;
 
-                if ((col-1) >= 0 && (col+1) <8){
+                if ((col - 1) >= 0 && (col + 1) < 8) {
                     RowColumnMapping possible1 = new RowColumnMapping(row - 1, col - 1);
                     RowColumnMapping possible2 = new RowColumnMapping(row - 1, col + 1);
                     addPossibleToBlockToList(possible1);
@@ -1012,23 +1016,23 @@ else just draw the piece in toBlock */
                     return;
                 }
 
-                if ((col - 1) <0){
+                if ((col - 1) < 0) {
                     RowColumnMapping possible2 = new RowColumnMapping(row - 1, col + 1);
                     addPossibleToBlockToList(possible2);
 
                 }
 
-                if ((col + 1) >7){
+                if ((col + 1) > 7) {
                     RowColumnMapping possible1 = new RowColumnMapping(row - 1, col - 1);
                     addPossibleToBlockToList(possible1);
                 }
             }
             if (checkerPieceInfoHashMap.get(fromMove).getColor().equals(Color.BLACK)) {
 
-                if (row+1 > 7)
+                if (row + 1 > 7)
                     return;
 
-                if ((col-1) >= 0 && (col+1) <8){
+                if ((col - 1) >= 0 && (col + 1) < 8) {
                     RowColumnMapping possible1 = new RowColumnMapping(row + 1, col - 1);
                     RowColumnMapping possible2 = new RowColumnMapping(row + 1, col + 1);
                     addPossibleToBlockToList(possible1);
@@ -1036,12 +1040,12 @@ else just draw the piece in toBlock */
                     return;
                 }
 
-                if ((col - 1) <0){
+                if ((col - 1) < 0) {
                     RowColumnMapping possible2 = new RowColumnMapping(row + 1, col + 1);
                     addPossibleToBlockToList(possible2);
                 }
 
-                if ((col + 1) >7){
+                if ((col + 1) > 7) {
                     RowColumnMapping possible1 = new RowColumnMapping(row + 1, col - 1);
                     addPossibleToBlockToList(possible1);
                 }
@@ -1051,7 +1055,6 @@ else just draw the piece in toBlock */
 
 
     }
-
 
 
     @Override
